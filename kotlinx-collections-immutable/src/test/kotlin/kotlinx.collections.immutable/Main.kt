@@ -10,7 +10,7 @@ fun main(args: Array<String>) {
         println(builder)
     }
 
-    var map = immutableHashMapOf(1 to "a", 2 to "b", -1 to "d", 3 to "c", null to "z")
+    var map = persistentHashMapOf(1 to "a", 2 to "b", -1 to "d", 3 to "c", null to "z")
 
     println(map.entries)
 
@@ -34,7 +34,7 @@ fun main(args: Array<String>) {
 
 
 fun mapOfMap() {
-    var map = immutableHashMapOf(1 to immutableHashMapOf("x" to 2 as Any)).put(1, immutableHashMapOf())
+    var map = persistentHashMapOf(1 to persistentHashMapOf("x" to 2 as Any)).put(1, persistentHashMapOf())
 
     println(map)
 }

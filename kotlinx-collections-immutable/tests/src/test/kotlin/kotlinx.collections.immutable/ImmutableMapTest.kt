@@ -7,14 +7,14 @@ import java.util.*
 import kotlin.test.*
 
 class ImmutableHashMapTest : ImmutableMapTest() {
-    override fun <K, V> immutableMapOf(vararg pairs: Pair<K, V>): ImmutableMap<K, V> = kotlinx.collections.immutable.immutableHashMapOf(*pairs)
+    override fun <K, V> persistentMapOf(vararg pairs: Pair<K, V>): PersistentMap<K, V> = kotlinx.collections.immutable.persistentHashMapOf(*pairs)
 }
 class ImmutableOrderedMapTest : ImmutableMapTest() {
-    override fun <K, V> immutableMapOf(vararg pairs: Pair<K, V>): ImmutableMap<K, V> = kotlinx.collections.immutable.immutableMapOf(*pairs)
+    override fun <K, V> persistentMapOf(vararg pairs: Pair<K, V>): PersistentMap<K, V> = kotlinx.collections.immutable.persistentMapOf(*pairs)
     override fun <K, V> compareMaps(expected: Map<K, V>, actual: Map<K, V>) = compare(expected, actual) { mapBehavior(ordered = true) }
 
     @Test fun iterationOrder() {
-        var map = immutableMapOf("x" to null, "y" to 1)
+        var map = persistentMapOf("x" to null, "y" to 1)
         compare(setOf("x", "y"), map.keys) { setBehavior(ordered = true) }
 
         map += "x" to 1
@@ -30,92 +30,92 @@ class ImmutableOrderedMapTest : ImmutableMapTest() {
 
 abstract class ImmutableMapTest {
 
-    abstract fun <K, V> immutableMapOf(vararg pairs: Pair<K, V>): ImmutableMap<K, V>
+    abstract fun <K, V> persistentMapOf(vararg pairs: Pair<K, V>): PersistentMap<K, V>
 
     open fun <K, V> compareMaps(expected: Map<K, V>, actual: Map<K, V>) = compareMapsUnordered(expected, actual)
     fun <K, V> compareMapsUnordered(expected: Map<K, V>, actual: Map<K, V>) = compare(expected, actual) { mapBehavior(ordered = false) }
 
 
     @Test fun empty() {
-        val empty1 = immutableMapOf<Int, String>()
-        val empty2 = immutableMapOf<String, Int>()
-        assertEquals<ImmutableMap<*, *>>(empty1, empty2)
-        assertEquals(mapOf<Int, String>(), empty1)
+        val empty1 = persistentMapOf<Int, String>()
+        val empty2 = persistentMapOf<String, Int>()
+        assertEquals<PersistentMap<*, *>>(empty1, empty2)
+        assertEquals(mapOf<Int, String>(), empty1.asMap())
         assertTrue(empty1 === empty2)
 
-        compareMaps(emptyMap(), empty1)
+        compareMaps(emptyMap(), empty1.asMap())
     }
 
 
     @Test fun ofPairs() {
         val map0 = mapOf("x" to 1, "y" to null, null to 2)
-        val map1 = immutableMapOf("x" to 1, "y" to null, null to 2)
-        val map2 = immutableMapOf("x" to 1, "y" to null, null to 2)
+        val map1 = persistentMapOf("x" to 1, "y" to null, null to 2)
+        val map2 = persistentMapOf("x" to 1, "y" to null, null to 2)
 
-        compareMaps(map0, map1)
-        compareMaps(map1, map2)
+        compareMaps(map0, map1.asMap())
+        compareMaps(map1.asMap(), map2.asMap())
     }
 
 
     @Test fun toImmutable() {
         val original = mapOf("x" to 1, "y" to null, null to 2)
-        val immOriginal = original.toImmutableMap()
-        compareMaps(original, immOriginal)
+        val immOriginal = original.toPersistentMap()
+        compareMaps(original, immOriginal.asMap())
 
 
         val map = HashMap(original) // copy
-        var immMap = map.toImmutableMap()
-        val immMap2 = immMap.toImmutableMap()
+        var immMap = map.toPersistentMap()
+        val immMap2 = immMap.asMap().toPersistentMap()
         assertTrue(immMap2 === immMap)
 
-        compareMapsUnordered(original, immMap)
-        compareMapsUnordered(map, immMap)
+        compareMapsUnordered(original, immMap.asMap())
+        compareMapsUnordered(map, immMap.asMap())
 
         map.remove(null)
-        assertNotEquals<Map<*, *>>(map, immMap)
+        assertNotEquals<Map<*, *>>(map, immMap.asMap())
 
         immMap = immMap.remove(null)
-        assertEquals<Map<*, *>>(map, immMap) // problem
+        assertEquals<Map<*, *>>(map, immMap.asMap()) // problem
     }
 
 
     @Test fun putElements() {
-        var map = immutableMapOf<String, Int?>()
+        var map = persistentMapOf<String, Int?>()
         map = map.put("x", 0)
         map = map.put("x", 1)
         map = map.putAll(arrayOf("x" to null))
         map = map + ("y" to null)
         map += "y" to 1
-        assertEquals(mapOf("x" to null, "y" to 1), map)
+        assertEquals(mapOf("x" to null, "y" to 1), map.asMap())
 
         map += map
-        map += map.map { it.key + "!" to it.value }
+        map += map.asMap().map { it.key + "!" to it.value }
 
         assertEquals(map.size, map.entries.size)
 
-        assertEquals(mapOf("x" to null, "y" to 1, "x!" to null, "y!" to 1), map)
+        assertEquals(mapOf("x" to null, "y" to 1, "x!" to null, "y!" to 1), map.asMap())
     }
 
     @Test fun removeElements() {
-        val map = immutableMapOf("x" to 1, null to "x")
+        val map = persistentMapOf("x" to 1, null to "x")
 
         fun <K, V> assertEquals(expected: Map<out K, V>, actual: Map<out K, V>) = kotlin.test.assertEquals(expected, actual)
 
-        assertEquals(mapOf("x" to 1), map.remove(null))
-        assertEquals(mapOf("x" to 1), map.remove(null, "x"))
+        assertEquals(mapOf("x" to 1), map.remove(null).asMap())
+        assertEquals(mapOf("x" to 1), map.remove(null, "x").asMap())
         assertEquals(map, map.remove("x", 2))
 
-        assertEquals(emptyMap(), map.clear())
-        assertEquals(emptyMap(), map.remove("x").remove(null))
+        assertEquals(emptyMap(), map.clear().asMap())
+        assertEquals(emptyMap(), map.remove("x").remove(null).asMap())
     }
 
 
     @Test fun builder() {
 
-        val builder = immutableMapOf<Char, Int?>().builder()
+        val builder = persistentMapOf<Char, Int?>().builder()
         "abcxaxyz12".associateTo(builder) { it to it.toInt() }
         val map = builder.build()
-        assertEquals<Map<*, *>>(map, builder)
+        assertEquals<Map<*, *>>(map.asMap(), builder)
         assertTrue(map === builder.build(), "Building the same list without modifications")
 
         val map2 = builder.toImmutableMap()
@@ -130,31 +130,31 @@ abstract class ImmutableMapTest {
         }
     }
 
-    fun <K, V> ImmutableMap<K, V>.testMutation(operation: MutableMap<K, V>.() -> Unit) {
-        val mutable = HashMap(this) as MutableMap<K, V>
+    fun <K, V> PersistentMap<K, V>.testMutation(operation: MutableMap<K, V>.() -> Unit) {
+        val mutable = HashMap(this.asMap()) as MutableMap<K, V>
         val builder = this.builder()
 
         operation(mutable)
         operation(builder)
 
         compareMapsUnordered(mutable, builder)
-        compareMapsUnordered(mutable, builder.build())
+        compareMapsUnordered(mutable, builder.build().asMap())
     }
 
     @Test fun noOperation() {
-        immutableMapOf<Int, String>().testNoOperation({ clear() }, { clear() })
+        persistentMapOf<Int, String>().testNoOperation({ clear() }, { clear() })
 
-        val map = immutableMapOf("x" to 1, null to "x")
+        val map = persistentMapOf("x" to 1, null to "x")
         with(map) {
             testNoOperation({ remove("y") }, { remove("y") })
             testNoOperation({ remove("x", 2) }, { remove("x", 2) })
             testNoOperation({ put("x", 1) }, { put("x", 1) })     // does not hold
-            testNoOperation({ putAll(this) }, { putAll(this) })   // does not hold
+            testNoOperation({ putAll(this.asMap()) }, { putAll(this) })   // does not hold
             testNoOperation({ putAll(emptyMap()) }, { putAll(emptyMap()) })
         }
     }
 
-    fun <K, V> ImmutableMap<K, V>.testNoOperation(persistent: ImmutableMap<K, V>.() -> ImmutableMap<K, V>, mutating: MutableMap<K, V>.() -> Unit) {
+    fun <K, V> PersistentMap<K, V>.testNoOperation(persistent: PersistentMap<K, V>.() -> PersistentMap<K, V>, mutating: MutableMap<K, V>.() -> Unit) {
         val result = this.persistent()
         val buildResult = this.mutate(mutating)
         // Ensure non-mutating operations return the same instance
@@ -165,11 +165,11 @@ abstract class ImmutableMapTest {
 
     @Test
     fun covariantTyping() {
-        val mapNothing = immutableMapOf<Nothing, Nothing>()
-        val mapSI: ImmutableMap<String, Int> = mapNothing + ("x" to 1)
-        val mapSNI: ImmutableMap<String, Int?> = mapSI + mapOf("y" to null)
-        val mapANA: ImmutableMap<Any, Any?> = mapSNI + listOf(1 to "x")
+        val mapNothing = persistentMapOf<Nothing, Nothing>()
+        val mapSI: PersistentMap<String, Int> = mapNothing + ("x" to 1)
+        val mapSNI: PersistentMap<String, Int?> = mapSI + mapOf("y" to null)
+        val mapANA: PersistentMap<Any, Any?> = mapSNI + listOf(1 to "x")
 
-        assertEquals(mapOf(1 to "x", "x" to 1, "y" to null), mapANA)
+        assertEquals(mapOf(1 to "x", "x" to 1, "y" to null), mapANA.asMap())
     }
 }

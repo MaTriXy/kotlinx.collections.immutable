@@ -19,7 +19,7 @@ package kotlinx.collections.immutable
 import org.pcollections.PMap
 import java.util.ConcurrentModificationException
 
-internal abstract class AbstractImmutableMap<K, out V> protected constructor(protected val impl: PMap<K, @UnsafeVariance V>) : ImmutableMap<K, V> {
+internal abstract class AbstractImmutableMap<K, out V> protected constructor(protected val impl: PMap<K, @UnsafeVariance V>) : PersistentMap<K, V>, ImmutableMap<K, V> {
 
     abstract class AbstractImmutableEntry<out K, out V> : Map.Entry<K, V> {
         override fun equals(other: Any?): Boolean = other is Map.Entry<*,*> && other.key == key && other.value == value
@@ -52,19 +52,20 @@ internal abstract class AbstractImmutableMap<K, out V> protected constructor(pro
     final override val entries: Set<Map.Entry<K, V>> get() = _entries ?: createEntries().apply { _entries = this }
     protected open fun createEntries(): Set<Map.Entry<K, V>> = impl.entries
 
-    override fun put(key: K, value: @UnsafeVariance V): ImmutableMap<K, V> = wrap(impl.plus(key, value))
-    override fun putAll(m: Map<out K, @UnsafeVariance V>): ImmutableMap<K, V> = wrap(impl.plusAll(m))
-    override fun remove(key: K): ImmutableMap<K, V> = wrap(impl.minus(key))
-    override fun remove(key: K, value: @UnsafeVariance V): ImmutableMap<K, V>
+    override fun put(key: K, value: @UnsafeVariance V): PersistentMap<K, V> = wrap(impl.plus(key, value))
+    override fun putAll(m: Map<out K, @UnsafeVariance V>): PersistentMap<K, V> = wrap(impl.plusAll(m))
+    override fun remove(key: K): PersistentMap<K, V> = wrap(impl.minus(key))
+    override fun remove(key: K, value: @UnsafeVariance V): PersistentMap<K, V>
             = if (!impl.contains(key, value)) this else wrap(impl.minus(key))
 
     override abstract fun builder(): Builder<K, @UnsafeVariance V>
 
     protected abstract fun wrap(impl: PMap<K, @UnsafeVariance V>): AbstractImmutableMap<K, V>
 
+    override fun asMap(): ImmutableMap<K, V> = this
 
-    abstract class Builder<K, V> protected constructor(protected var value: AbstractImmutableMap<K, V>, protected var impl: PMap<K, V>) : ImmutableMap.Builder<K, V>, AbstractMutableMap<K, V>() {
-        override fun build(): ImmutableMap<K, V> = value.wrap(impl).apply { value = this }
+    abstract class Builder<K, V> protected constructor(protected var value: AbstractImmutableMap<K, V>, protected var impl: PMap<K, V>) : PersistentMap.Builder<K, V>, AbstractMutableMap<K, V>() {
+        override fun build(): PersistentMap<K, V> = value.wrap(impl).apply { value = this }
 
         override val size: Int get() = impl.size
         override fun isEmpty(): Boolean = impl.isEmpty()

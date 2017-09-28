@@ -18,13 +18,15 @@
 
 package kotlinx.collections.immutable
 
+import com.sun.org.apache.xpath.internal.operations.Bool
+
 //@Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
 //inline fun <T> @kotlin.internal.Exact ImmutableCollection<T>.mutate(mutator: (MutableCollection<T>) -> Unit): ImmutableCollection<T> = builder().apply(mutator).build()
 // it or this?
 inline fun <T> ImmutableSet<T>.mutate(mutator: (MutableSet<T>) -> Unit): ImmutableSet<T> = builder().apply(mutator).build()
 inline fun <T> ImmutableList<T>.mutate(mutator: (MutableList<T>) -> Unit): ImmutableList<T> = builder().apply(mutator).build()
 
-inline fun <K, V> ImmutableMap<K, V>.mutate(mutator: (MutableMap<K, V>) -> Unit): ImmutableMap<K, V> = builder().apply(mutator).build()
+inline fun <K, V> PersistentMap<K, V>.mutate(mutator: (MutableMap<K, V>) -> Unit): PersistentMap<K, V> = builder().apply(mutator).build()
 
 
 inline operator fun <E> ImmutableCollection<E>.plus(element: E): ImmutableCollection<E> = add(element)
@@ -86,35 +88,39 @@ operator fun <E> ImmutableSet<E>.minus(elements: Sequence<E>): ImmutableSet<E>
         = mutate { it.removeAll(elements) }
 
 
-inline operator fun <K, V> ImmutableMap<out K, V>.plus(pair: Pair<K, V>): ImmutableMap<K, V>
-        = (this as ImmutableMap<K, V>).put(pair.first, pair.second)
-inline operator fun <K, V> ImmutableMap<out K, V>.plus(pairs: Iterable<Pair<K, V>>): ImmutableMap<K, V> = putAll(pairs)
-inline operator fun <K, V> ImmutableMap<out K, V>.plus(pairs: Array<out Pair<K, V>>): ImmutableMap<K, V> = putAll(pairs)
-inline operator fun <K, V> ImmutableMap<out K, V>.plus(pairs: Sequence<Pair<K, V>>): ImmutableMap<K, V> = putAll(pairs)
-inline operator fun <K, V> ImmutableMap<out K, V>.plus(map: Map<out K, V>): ImmutableMap<K, V>
-        = (this as ImmutableMap<K, V>).putAll(map)
+inline operator fun <K, V> PersistentMap<out K, V>.plus(pair: Pair<K, V>): PersistentMap<K, V>
+        = (this as PersistentMap<K, V>).put(pair.first, pair.second)
+inline operator fun <K, V> PersistentMap<out K, V>.plus(pairs: Iterable<Pair<K, V>>): PersistentMap<K, V> = putAll(pairs)
+inline operator fun <K, V> PersistentMap<out K, V>.plus(pairs: Array<out Pair<K, V>>): PersistentMap<K, V> = putAll(pairs)
+inline operator fun <K, V> PersistentMap<out K, V>.plus(pairs: Sequence<Pair<K, V>>): PersistentMap<K, V> = putAll(pairs)
+inline operator fun <K, V> PersistentMap<out K, V>.plus(map: Map<out K, V>): PersistentMap<K, V>
+        = (this as PersistentMap<K, V>).putAll(map)
 
-public fun <K, V> ImmutableMap<out K, V>.putAll(pairs: Iterable<Pair<K, V>>): ImmutableMap<K, V>
-        = (this as ImmutableMap<K, V>).mutate { it.putAll(pairs) }
+inline operator fun <K, V> PersistentMap<out K, V>.plus(map: PersistentMap<out K, V>): PersistentMap<K, V>
+        = (this as PersistentMap<K, V>).putAll(map.asMap())
 
-public fun <K, V> ImmutableMap<out K, V>.putAll(pairs: Array<out Pair<K, V>>): ImmutableMap<K, V>
-        = (this as ImmutableMap<K, V>).mutate { it.putAll(pairs) }
+public fun <K, V> PersistentMap<out K, V>.putAll(pairs: Iterable<Pair<K, V>>): PersistentMap<K, V>
+        = (this as PersistentMap<K, V>).mutate { it.putAll(pairs) }
 
-public fun <K, V> ImmutableMap<out K, V>.putAll(pairs: Sequence<Pair<K, V>>): ImmutableMap<K, V>
-        = (this as ImmutableMap<K, V>).mutate { it.putAll(pairs) }
+public fun <K, V> PersistentMap<out K, V>.putAll(pairs: Array<out Pair<K, V>>): PersistentMap<K, V>
+        = (this as PersistentMap<K, V>).mutate { it.putAll(pairs) }
+
+public fun <K, V> PersistentMap<out K, V>.putAll(pairs: Sequence<Pair<K, V>>): PersistentMap<K, V>
+        = (this as PersistentMap<K, V>).mutate { it.putAll(pairs) }
 
 
-public operator fun <K, V> ImmutableMap<out K, V>.minus(key: K): ImmutableMap<K, V>
-        = (this as ImmutableMap<K, V>).remove(key)
+public operator fun <K, V> PersistentMap<out K, V>.minus(key: K): PersistentMap<K, V>
+        = (this as PersistentMap<K, V>).remove(key)
 
-public operator fun <K, V> ImmutableMap<out K, V>.minus(keys: Iterable<K>): ImmutableMap<K, V>
-        = (this as ImmutableMap<K, V>).mutate { it.minusAssign(keys) }
+public operator fun <K, V> PersistentMap<out K, V>.minus(keys: Iterable<K>): PersistentMap<K, V>
+        = (this as PersistentMap<K, V>).mutate { it.minusAssign(keys) }
 
-public operator fun <K, V> ImmutableMap<out K, V>.minus(keys: Array<out K>): ImmutableMap<K, V>
-        = (this as ImmutableMap<K, V>).mutate { it.minusAssign(keys) }
+public operator fun <K, V> PersistentMap<out K, V>.minus(keys: Array<out K>): PersistentMap<K, V>
+        = (this as PersistentMap<K, V>).mutate { it.minusAssign(keys) }
 
-public operator fun <K, V> ImmutableMap<out K, V>.minus(keys: Sequence<K>): ImmutableMap<K, V>
-        = (this as ImmutableMap<K, V>).mutate { it.minusAssign(keys) }
+public operator fun <K, V> PersistentMap<out K, V>.minus(keys: Sequence<K>): PersistentMap<K, V>
+        = (this as PersistentMap<K, V>).mutate { it.minusAssign(keys) }
+
 
 
 fun <E> immutableListOf(vararg elements: E): ImmutableList<E> = ImmutableVectorList.emptyOf<E>().addAll(elements.asList())
@@ -125,8 +131,8 @@ fun <E> immutableSetOf(): ImmutableSet<E> = ImmutableOrderedSet.emptyOf<E>()
 
 fun <E> immutableHashSetOf(vararg elements: E): ImmutableSet<E> = ImmutableHashSet.emptyOf<E>().addAll(elements.asList())
 
-fun <K, V> immutableMapOf(vararg pairs: Pair<K, V>): ImmutableMap<K, V> = ImmutableOrderedMap.emptyOf<K,V>().mutate { it += pairs }
-fun <K, V> immutableHashMapOf(vararg pairs: Pair<K, V>): ImmutableMap<K, V> = ImmutableHashMap.emptyOf<K,V>().mutate { it += pairs }
+fun <K, V> persistentMapOf(vararg pairs: Pair<K, V>): PersistentMap<K, V> = ImmutableOrderedMap.emptyOf<K,V>().mutate { it += pairs }
+fun <K, V> persistentHashMapOf(vararg pairs: Pair<K, V>): PersistentMap<K, V> = ImmutableHashMap.emptyOf<K,V>().mutate { it += pairs }
 
 fun <T> Iterable<T>.toImmutableList(): ImmutableList<T> =
         this as? ImmutableList
@@ -152,10 +158,14 @@ fun <T> Set<T>.toImmutableHashSet(): ImmutableSet<T>
 
 fun <K, V> Map<K, V>.toImmutableMap(): ImmutableMap<K, V>
     = this as? ImmutableMap
-        ?: (this as? ImmutableMap.Builder)?.build()
+        ?: toPersistentMap().asMap()
+
+fun <K, V> Map<K, V>.toPersistentMap(): PersistentMap<K, V>
+        = this as? PersistentMap<K, V>
+        ?: (this as? PersistentMap.Builder)?.build()
         ?: ImmutableOrderedMap.emptyOf<K, V>().putAll(this)
 
-fun <K, V> Map<K, V>.toImmutableHashMap(): ImmutableMap<K, V>
-    = this as? ImmutableMap
+fun <K, V> Map<K, V>.toPerstentHashMap(): PersistentMap<K, V>
+    = this as? ImmutableHashMap
         ?: (this as? ImmutableHashMap.Builder)?.build()
         ?: ImmutableHashMap.emptyOf<K, V>().putAll(this)

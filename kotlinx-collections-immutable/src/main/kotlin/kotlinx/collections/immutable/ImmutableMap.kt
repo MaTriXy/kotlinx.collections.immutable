@@ -16,30 +16,84 @@
 
 package kotlinx.collections.immutable
 
+public interface ImmutableMap<K, out V> : Map<K, V> {}
 
-public interface ImmutableMap<K, out V>: Map<K, V> {
 
-    override val keys: Set<K>
+public interface PersistentMap<K, out V> {
 
-    override val values: Collection<V>
+    /**
+     * Returns the number of key/value pairs in the map.
+     */
+    public val size: Int
 
-    override val entries: Set<Map.Entry<K, V>>
+    /**
+     * Returns `true` if the map is empty (contains no elements), `false` otherwise.
+     */
+    public fun isEmpty(): Boolean
 
-    fun put(key: K, value: @UnsafeVariance V): ImmutableMap<K, V>
+    /**
+     * Returns `true` if the map contains the specified [key].
+     */
+    public fun containsKey(key: K): Boolean
 
-    fun remove(key: K): ImmutableMap<K, V>
+    /**
+     * Returns `true` if the map maps one or more keys to the specified [value].
+     */
+    public fun containsValue(value: @UnsafeVariance V): Boolean
 
-    fun remove(key: K, value: @UnsafeVariance V): ImmutableMap<K, V>
+    /**
+     * Returns the value corresponding to the given [key], or `null` if such a key is not present in the map.
+     */
+    public operator fun get(key: K): V?
 
-    fun putAll(m: Map<out K, @UnsafeVariance V>): ImmutableMap<K, V>  // m: Iterable<Map.Entry<K, V>> or Map<out K,V> or Iterable<Pair<K, V>>
+/*    *//**
+     * Returns the value corresponding to the given [key], or [defaultValue] if such a key is not present in the map.
+     *
+     * @since JDK 1.8
+     *//*
+    @SinceKotlin("1.1")
+    @PlatformDependent
+    public fun getOrDefault(key: K, defaultValue: @UnsafeVariance V): V {
+        // See default implementation in JDK sources
+        return null as V
+    }*/
 
-    fun clear(): ImmutableMap<K, V>
+    // Views
+    /**
+     * Returns a read-only [Set] of all keys in this map.
+     */
+    public val keys: Set<K>
+
+    /**
+     * Returns a read-only [Collection] of all values in this map. Note that this collection may contain duplicate values.
+     */
+    public val values: Collection<V>
+
+    /**
+     * Returns a read-only [Set] of all key/value pairs in this map.
+     */
+    public val entries: Set<Map.Entry<K, V>>
+
+
+
+
+    fun put(key: K, value: @UnsafeVariance V): PersistentMap<K, V>
+
+    fun remove(key: K): PersistentMap<K, V>
+
+    fun remove(key: K, value: @UnsafeVariance V): PersistentMap<K, V>
+
+    fun putAll(m: Map<out K, @UnsafeVariance V>): PersistentMap<K, V>  // m: Iterable<Map.Entry<K, V>> or Map<out K,V> or Iterable<Pair<K, V>>
+
+    fun clear(): PersistentMap<K, V>
 
     interface Builder<K, V>: MutableMap<K, V> {
-        fun build(): ImmutableMap<K, V>
+        fun build(): PersistentMap<K, V>
     }
 
     fun builder(): Builder<K, @UnsafeVariance V>
+
+    fun asMap(): ImmutableMap<K, V>
 }
 
 

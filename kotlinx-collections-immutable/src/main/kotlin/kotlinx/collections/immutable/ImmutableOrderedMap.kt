@@ -21,7 +21,7 @@ import org.pcollections.PMap
 import java.util.ConcurrentModificationException
 
 
-internal class ImmutableOrderedMap<K, out V> private constructor(private val impl: PMap<K, LinkedEntry<K, V>>) : ImmutableMap<K, V>, AbstractMap<K, V>() {
+internal class ImmutableOrderedMap<K, out V> private constructor(private val impl: PMap<K, LinkedEntry<K, V>>) : PersistentMap<K, V>, ImmutableMap<K, V>, AbstractMap<K, V>() {
     // TODO: Keep reference to first/last entry
 
     protected class LinkedEntry<out K, out V>(val key: K, val value: @UnsafeVariance V, val prevKey: Any?, val nextKey: Any?) {
@@ -59,30 +59,32 @@ internal class ImmutableOrderedMap<K, out V> private constructor(private val imp
     final override val entries: Set<Map.Entry<K, V>> get() = _entries ?: createEntries().apply { _entries = this }
     private fun createEntries(): Set<Map.Entry<K, V>> = OrderedEntrySet()
 
-    override fun put(key: K, value: @UnsafeVariance V): ImmutableMap<K, V> = wrap(impl.putEntry(impl[key], key, value))
-    override fun putAll(m: Map<out K, @UnsafeVariance V>): ImmutableMap<K, V> {
+    override fun put(key: K, value: @UnsafeVariance V): PersistentMap<K, V> = wrap(impl.putEntry(impl[key], key, value))
+    override fun putAll(m: Map<out K, @UnsafeVariance V>): PersistentMap<K, V> {
         var newImpl = impl
         for ((k, v) in m)
             newImpl = newImpl.putEntry(newImpl[k], k, v)
 
         return wrap(newImpl)
     }
-    override fun remove(key: K): ImmutableMap<K, V> = wrap(impl.removeLinked(key))
+    override fun remove(key: K): PersistentMap<K, V> = wrap(impl.removeLinked(key))
 
-    override fun remove(key: K, value: @UnsafeVariance V): ImmutableMap<K, V>
+    override fun remove(key: K, value: @UnsafeVariance V): PersistentMap<K, V>
             = if (!impl.contains(key, value)) this else remove(key)
 
-    override fun clear(): ImmutableMap<K, V> = emptyOf()
+    override fun clear(): PersistentMap<K, V> = emptyOf()
 
-    override fun builder(): ImmutableMap.Builder<K, @UnsafeVariance V> = Builder(this, impl)
+    override fun builder(): PersistentMap.Builder<K, @UnsafeVariance V> = Builder(this, impl)
+
+    override fun asMap(): ImmutableMap<K, V> = this
 
     protected fun wrap(impl: PMap<K, LinkedEntry<K, @UnsafeVariance V>>): ImmutableOrderedMap<K, V> {
         return if (impl === this.impl) this else ImmutableOrderedMap(impl)
     }
 
 
-    protected class Builder<K, V>(protected var value: ImmutableOrderedMap<K, V>, protected var impl: PMap<K, LinkedEntry<K, V>>) : ImmutableMap.Builder<K, V>, AbstractMutableMap<K, V>() {
-        override fun build(): ImmutableMap<K, V> = value.wrap(impl).apply { value = this }
+    protected class Builder<K, V>(protected var value: ImmutableOrderedMap<K, V>, protected var impl: PMap<K, LinkedEntry<K, V>>) : PersistentMap.Builder<K, V>, AbstractMutableMap<K, V>() {
+        override fun build(): PersistentMap<K, V> = value.wrap(impl).apply { value = this }
 
         override val size: Int get() = impl.size
         override fun isEmpty(): Boolean = impl.isEmpty()
