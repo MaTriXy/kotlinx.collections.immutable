@@ -11,24 +11,24 @@ class ImmutableListTest {
 
 
     @Test fun empty() {
-        val empty1 = immutableListOf<Int>()
-        val empty2 = immutableListOf<String>()
-        assertEquals<ImmutableList<Any>>(empty1, empty2)
-        assertEquals<List<Any>>(listOf(), empty1)
+        val empty1 = persistentListOf<Int>()
+        val empty2 = persistentListOf<String>()
+        assertEquals<PersistentList<Any>>(empty1, empty2)
+        assertEquals<List<Any>>(listOf(), empty1.asList())
         assertTrue(empty1 === empty2)
 
         assertFailsWith<NoSuchElementException> { empty1.iterator().next() }
 
-        compareLists(emptyList(), empty1)
+        compareLists(emptyList(), empty1.asList())
 
     }
 
     @Test fun ofElements() {
         val list0 = listOf("a", "d", 1, null)
-        val list1 = immutableListOf("a", "d", 1, null)
-        val list2 = immutableListOf("a", "d", 1, null)
+        val list1 = persistentListOf("a", "d", 1, null)
+        val list2 = persistentListOf("a", "d", 1, null)
 
-        compareLists(list0, list1)
+        compareLists(list0, list1.asList())
         assertEquals(list1, list2)
     }
 
@@ -36,47 +36,47 @@ class ImmutableListTest {
         val original = listOf("a", "bar", "cat", null)
 
         val list = original.toMutableList() // copy
-        var immList = list.toImmutableList()
-        val immList2 = immList.toImmutableList()
+        var immList = list.toPersistentList()
+        val immList2 = immList.asList().toPersistentList()
         assertTrue(immList2 === immList)
 
-        compareLists(original, immList)
+        compareLists(original, immList.asList())
 
         list.removeAt(0)
-        assertNotEquals<List<*>>(list, immList)
+        assertNotEquals<List<*>>(list, immList.asList())
 
         immList = immList.removeAt(0)
-        compareLists(list, immList)
+        compareLists(list, immList.asList())
     }
 
     @Test fun addElements() {
-        var list = immutableListOf<String>()
+        var list = persistentListOf<String>()
         list = list.add("x")
         list = list.add(0, "a")
-        list = list.addAll(list)
+        list = list.addAll(list.asList())
         list = list.addAll(1, listOf("b", "c"))
         list = list + "y"
         list += "z"
         list += arrayOf("1", "2").asIterable()
-        compareLists("abcxaxyz12".map { it.toString() }, list)
+        compareLists("abcxaxyz12".map { it.toString() }, list.asList())
     }
 
     @Test fun replaceElements() {
-        var list = "abcxaxab12".toImmutableList()
+        var list = "abcxaxab12".toPersistentList()
 
-        for (i in list.indices) {
+        for (i in list.asList().indices) {
             list = list.set(i, list[i] as Char + i)
         }
 
-        assertEquals("ace{e}gi9;", list.joinToString(""))
+        assertEquals("ace{e}gi9;", list.asList().joinToString(""))
         assertFailsWith<IndexOutOfBoundsException> { list.set(-1, '0') }
         assertFailsWith<IndexOutOfBoundsException> { list.set(list.size + 1, '0') }
     }
 
     @Test fun removeElements() {
-        val list = "abcxaxyz12".toImmutableList()
-        fun expectList(content: String, list: ImmutableList<Char>) {
-            compareLists(content.toList(), list)
+        val list = "abcxaxyz12".toPersistentList()
+        fun expectList(content: String, list: PersistentList<Char>) {
+            compareLists(content.toList(), list.asList())
         }
 
         expectList("bcxaxyz12", list.removeAt(0))
@@ -86,25 +86,25 @@ class ImmutableListTest {
         expectList("abcayz12", list - listOf('x'))
         expectList("abcxaxyz", list.removeAll { it.isDigit() })
 
-        assertEquals(emptyList<Char>(), list - list)
-        assertEquals(emptyList<Char>(), list.clear())
+        assertEquals(emptyList<Char>(), (list - list).asList())
+        assertEquals(emptyList<Char>(), list.clear().asList())
     }
 
     @Test fun subList() {
-        val list = "abcxaxyz12".toImmutableList()
+        val list = "abcxaxyz12".toPersistentList()
         val subList = list.subList(2, 5) // 2, 3, 4
-        assertTrue(subList is ImmutableList)
-        compareLists(listOf('c', 'x', 'a'), subList)
+        assertTrue(subList is PersistentList) // questionable
+        compareLists(listOf('c', 'x', 'a'), subList.asList())
 
         assertFailsWith<IndexOutOfBoundsException> { list.subList(-1, 2) }
         assertFailsWith<IndexOutOfBoundsException> { list.subList(0, list.size + 1) }
     }
 
     @Test fun builder() {
-        val builder = immutableListOf<Char>().builder()
+        val builder = persistentListOf<Char>().builder()
         "abcxaxyz12".toCollection(builder)
         val list = builder.build()
-        assertEquals<List<*>>(list, builder)
+        assertEquals<List<*>>(list.asList(), builder)
         assertTrue(list === builder.build(), "Building the same list without modifications")
 
         val list2 = builder.toImmutableList()
@@ -127,7 +127,7 @@ class ImmutableListTest {
     }
 
     @Test fun subListOfBuilder() {
-        val list = "abcxaxyz12".toImmutableList()
+        val list = "abcxaxyz12".toPersistentList()
         val builder = list.builder()
         val subList = builder.subList(2, 5)
         builder[4] = 'b'
@@ -137,21 +137,21 @@ class ImmutableListTest {
         assertEquals("abxbxyz12", builder.joinToString(""))
     }
 
-    fun <T> ImmutableList<T>.testMutation(operation: MutableList<T>.() -> Unit) {
-        val mutable = this.toMutableList()
+    fun <T> PersistentList<T>.testMutation(operation: MutableList<T>.() -> Unit) {
+        val mutable = this.asList().toMutableList()
         val builder = this.builder()
 
         operation(mutable)
         operation(builder)
 
         compareLists(mutable, builder)
-        compareLists(mutable, builder.build())
+        compareLists(mutable, builder.build().asList())
     }
 
     @Test fun noOperation() {
-        immutableListOf<Int>().testNoOperation({ clear() }, { clear() })
+        persistentListOf<Int>().testNoOperation({ clear() }, { clear() })
 
-        val list = "abcxaxyz12".toImmutableList()
+        val list = "abcxaxyz12".toPersistentList()
         with(list) {
             testNoOperation({ remove('d') }, { remove('d') })
             testNoOperation({ removeAll(listOf('d', 'e')) }, { removeAll(listOf('d', 'e')) })
@@ -159,7 +159,7 @@ class ImmutableListTest {
         }
     }
 
-    fun <T> ImmutableList<T>.testNoOperation(persistent: ImmutableList<T>.() -> ImmutableList<T>, mutating: MutableList<T>.() -> Unit) {
+    fun <T> PersistentList<T>.testNoOperation(persistent: PersistentList<T>.() -> PersistentList<T>, mutating: MutableList<T>.() -> Unit) {
         val result = this.persistent()
         val buildResult = this.mutate(mutating)
         // Ensure non-mutating operations return the same instance
@@ -168,12 +168,12 @@ class ImmutableListTest {
     }
 
     @Test fun covariantTyping() {
-        val listNothing = immutableListOf<Nothing>()
+        val listNothing = persistentListOf<Nothing>()
 
-        val listS: ImmutableList<String> = listNothing + "x"
-        val listSN: ImmutableList<String?> = listS + (null as String?)
-        val listAny: ImmutableList<Any?> = listSN + 1
+        val listS: PersistentList<String> = listNothing + "x"
+        val listSN: PersistentList<String?> = listS + (null as String?)
+        val listAny: PersistentList<Any?> = listSN + 1
 
-        assertEquals(listOf("x", null, 1), listAny)
+        assertEquals(listOf("x", null, 1), listAny.asList())
     }
 }

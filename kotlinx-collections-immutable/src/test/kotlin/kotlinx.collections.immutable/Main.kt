@@ -3,7 +3,7 @@ package kotlinx.collections.immutable
 fun main(args: Array<String>) {
 
     mapOfMap()
-    val set = immutableHashSetOf("d", "b", "c") + null as String?
+    val set = persistentHashSetOf("d", "b", "c") + null as String?
     set.run {
         val builder = set.builder()
         builder.removeAll { it.orEmpty() > "b" }
@@ -41,7 +41,7 @@ fun mapOfMap() {
 
 
 fun foo() {
-    var list: ImmutableList<String> = ImmutableVectorList.emptyOf()
+    var list: PersistentList<String> = ImmutableVectorList.emptyOf()
 
     list = list.mutate { it.removeAll { it.length > 2 } }
     list = list.removeAll { it.length >  2}
